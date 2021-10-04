@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ShameBoy.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -46,20 +47,33 @@ namespace ShameBoy
         /// </summary>
         private byte[] hram = new byte[128];
 
-        public MemoryBank()
+        public MemoryBank(byte[] bios)
         {
             //TODO implement :3
+            if(bios.Length != 256)
+            {
+                throw new InvalidBiosException();
+            }
         }
 
-        private ref byte getByteRef(ushort i)
+        public byte ReadByte(ushort address)
         {
-            return ref this.bios[0];
+            return 0;
         }
 
-        public byte this[ushort i]
+        public byte ReadShort(ushort address)
         {
-            get { return 0; }
-            set { }
+            return 0;
+        }
+
+        public void WriteByte(ushort address, byte value)
+        {
+
+        }
+
+        public void WriteShort(ushort address, short value)
+        {
+
         }
     }
 }
