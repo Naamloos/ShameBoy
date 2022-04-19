@@ -28,10 +28,10 @@ namespace ShameBoy
         private ResolvedInstruction[] instructions;
         private byte tStateClock = 0;
 
-        public GameBoy(byte[] bios)
+        public GameBoy()
         {
             this.registers = new Registers();
-            this.memory = new MemoryBank(bios);
+            this.memory = new MemoryBank();
             this.instructions = new ResolvedInstruction[256]; // The instructions go from 0x00 to 0xFF, so that'd fit into 256 values.
 
             // Load CPU instructions into the dictionary
@@ -70,6 +70,7 @@ namespace ShameBoy
                     args[i] = memory.ReadByte(this.registers.ProgramCounter);
                     this.registers.ProgramCounter++;
                 }
+                Console.WriteLine($"${opcode:X2} [{string.Join(",", args)}]");
                 instruction.Invoke(ref this.tStateClock, args);
             }
         }

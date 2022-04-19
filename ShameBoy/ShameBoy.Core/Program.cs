@@ -7,7 +7,8 @@ namespace ShameBoy.Core
     {
         static void Main(string[] args)
         {
-            var boy = new GameBoy(new byte[256]);
+            var boy = new GameBoy();
+            boy.Start();
             Console.WriteLine("Press the any key to exit.");
             Console.ReadKey();
         }
