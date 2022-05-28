@@ -21,7 +21,7 @@ using System.Text;
 
 namespace ShameBoy
 {
-    public class GameBoy
+    public partial class GameBoy
     {
         private Registers registers;
         private MemoryBank memory;
@@ -61,16 +61,17 @@ namespace ShameBoy
         {
             while(true)
             {
-                var opcode = memory.ReadByte(this.registers.ProgramCounter);
+                var opcode = memory.FetchMemory(this.registers.ProgramCounter, 1)[0];
+
                 this.registers.ProgramCounter++;
+
                 var instruction = this.instructions[opcode];
-                var args = new byte[instruction.Attribute.Length - 1];
-                for(byte i =0; i < args.Length; i++)
-                {
-                    args[i] = memory.ReadByte(this.registers.ProgramCounter);
-                    this.registers.ProgramCounter++;
-                }
-                Console.WriteLine($"${opcode:X2} [{string.Join(",", args)}]");
+                var length = instruction.Attribute.Length;
+
+                var args = memory.FetchMemory(this.registers.ProgramCounter, length);
+                this.registers.ProgramCounter += length;
+
+                Console.WriteLine($"${opcode:X2} [{string.Join(",", args.ToArray())}]");
                 instruction.Invoke(ref this.tStateClock, args);
             }
         }
@@ -80,75 +81,11 @@ namespace ShameBoy
             this.registers = new Registers();
             this.tStateClock = 0;
         }
-
-        // args: opcode, length in bytes, description
-        [Instruction(0x00, 1, "NOP - No instruction")]
-        private byte NOP(params byte[] args)
-        {
-            // Return amount of T-states
-            return 4;
-        }
-
-        [Instruction(0x01, 3, "LD BC - Load 16-bit into BC")]
-        private byte LD_BC(params byte[] args)
-        {
-            this.registers.BC = memory.ReadShort(BitConverter.ToUInt16(args, 0));
-            return 12;
-        }
-
-        [Instruction(0x02, 1, "LD (BC), A - Load 8-bit value at A into address at pointer (BC)")]
-        private byte LD_A_BC(params byte[] args)
-        {
-            memory.WriteByte(registers.BC, registers.A);
-            return 8;
-        }
-
-        [Instruction(0x03, 1, "INC BC - Increase BC by 1")]
-        private byte INC_BC(params byte[] args)
-        {
-            // increase BC. no flags to be set.
-            this.registers.BC++;
-            return 8;
-        }
-
-        [Instruction(0x04, 1, "INC B - Increase B by 1")]
-        private byte INC_B(params byte[] args)
-        {
-
-            // increase B
-            this.registers.B++;
-
-            // result is zero? set zero flag.
-            this.registers.SetFlagConditional(FlagRegister.Zero, this.registers.B == 0);
-            this.registers.SetFlagConditional(FlagRegister.HalfCarry, this.registers.B == 0); // carry would only happen on 0
-            this.registers.DisableFlag(FlagRegister.AddSub); // addition, set flag 0
-
-            return 4;
-        }
-
-        [Instruction(0x05, 1, "DEC B - Decrease B by 1")]
-        private byte DEC_B(params byte[] args)
-        {
-            this.registers.B--;
-
-            this.registers.SetFlagConditional(FlagRegister.Zero, this.registers.B == 0); // result 0?
-            this.registers.SetFlagConditional(FlagRegister.HalfCarry, this.registers.B == 0); // carry would only happen on 0
-            this.registers.EnableFlag(FlagRegister.AddSub); // subtraction so addsub = 1
-
-            return 4;
-        }
-
-        [Instruction(0x06, 2, "LD B - Load 8-bit into B")]
-        private byte LD_B(params byte[] args)
-        {
-            this.registers.B = memory.ReadByte(args[0]);
-            return 8;
-        }
     }
 
     public class ResolvedInstruction
     {
-        public delegate byte ExecuteInstruction(params byte[] args);
+        public delegate byte ExecuteInstruction(Span<byte> args);
         public ExecuteInstruction Instruction;
         public InstructionAttribute Attribute;
 
@@ -158,7 +95,7 @@ namespace ShameBoy
             this.Attribute = attribute;
         }
 
-        public void Invoke(ref byte tStates, params byte[] args)
+        public void Invoke(ref byte tStates, Span<byte> args)
         {
             tStates = Instruction.Invoke(args);
         }

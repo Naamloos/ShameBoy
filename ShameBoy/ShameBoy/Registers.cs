@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ShameBoy
 {
+    [StructLayout(LayoutKind.Explicit)]
     public struct Registers
     {
         // TODO: AF, BC, DE, HL can also be accessed as a 16 bit register (combined)
@@ -11,120 +13,86 @@ namespace ShameBoy
         /// <summary>
         /// Register A
         /// </summary>
-        public byte A { get; set; }
+        [FieldOffset(0)]
+        public byte A;
 
         /// <summary>
         /// Register F
         /// </summary>
-        public FlagRegister F { get; set; }
+        [FieldOffset(1)]
+        public FlagRegister F;
 
         /// <summary>
         /// Combined register A/F
         /// </summary>
-        public ushort AF
-        {
-            get
-            {
-                return BitConverter.ToUInt16(new[] { A, (byte)F }, 0);
-            }
-            set
-            {
-                var bytes = BitConverter.GetBytes(value);
-                A = bytes[0];
-                F = (FlagRegister)bytes[1];
-            }
-        }
+        [FieldOffset(0)]
+        public ushort AF;
 
         /// <summary>
         /// Register B
         /// </summary>
-        public byte B { get; set; }
+        [FieldOffset(2)]
+        public byte B;
 
         /// <summary>
         /// Register C
         /// </summary>
-        public byte C { get; set; }
+        [FieldOffset(3)]
+        public byte C;
 
         /// <summary>
         /// Combined register B/C
         /// </summary>
-        public ushort BC
-        {
-            get
-            {
-                return BitConverter.ToUInt16(new[] { B, C }, 0);
-            }
-            set
-            {
-                var bytes = BitConverter.GetBytes(value);
-                B = bytes[0];
-                C = bytes[1];
-            }
-        }
+        [FieldOffset(2)]
+        public ushort BC;
 
         /// <summary>
         /// Register D
         /// </summary>
-        public byte D { get; set; }
+        [FieldOffset(4)]
+        public byte D;
 
         /// <summary>
         /// Register E
         /// </summary>
-        public byte E { get; set; }
+        [FieldOffset(5)]
+        public byte E;
 
         /// <summary>
         /// Combined register D/E
         /// </summary>
-        public ushort DE
-        {
-            get
-            {
-                return BitConverter.ToUInt16(new[] { D, E }, 0);
-            }
-            set
-            {
-                var bytes = BitConverter.GetBytes(value);
-                D = bytes[0];
-                E = bytes[1];
-            }
-        }
+        [FieldOffset(4)]
+        public ushort DE;
 
         /// <summary>
         /// Register H
         /// </summary>
-        public byte H { get; set; }
+        [FieldOffset(6)]
+        public byte H;
 
         /// <summary>
         /// Register L
         /// </summary>
-        public byte L { get; set; }
+        [FieldOffset(7)]
+        public byte L;
 
         /// <summary>
         /// Combined register H/L
         /// </summary>
-        public ushort HL
-        {
-            get
-            {
-                return BitConverter.ToUInt16(new[] { H, L }, 0);
-            }
-            set
-            {
-                var bytes = BitConverter.GetBytes(value);
-                H = bytes[0];
-                L = bytes[1];
-            }
-        }
+        [FieldOffset(6)]
+        public ushort HL;
 
         /// <summary>
         /// Stack pointer, points to a position on the stack
         /// </summary>
-        public ushort StackPointer { get; set; }
+        [FieldOffset(8)]
+        public ushort StackPointer;
 
         /// <summary>
         /// Program counter, points to a position in the program.
         /// </summary>
-        public ushort ProgramCounter { get; set; }
+        [FieldOffset(10)]
+        public ushort ProgramCounter;
 
         public void SetFlagConditional(FlagRegister flag, bool condition)
         {

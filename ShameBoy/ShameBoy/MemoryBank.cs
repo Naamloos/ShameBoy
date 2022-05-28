@@ -10,7 +10,7 @@ namespace ShameBoy
         /// <summary>
         /// GameBoy BIOS.
         /// </summary>
-        private byte[] bios = new byte[256]
+        private readonly byte[] bios =
         {
             0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
             0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 0xE2, 0x32, 0x3E, 0x77, 0x77, 0x3E, 0xFC, 0xE0,
@@ -65,7 +65,7 @@ namespace ShameBoy
             rom.CopyTo(this.rom, 0);
         }
 
-        public byte ReadByte(ushort address)
+        public Span<byte> FetchMemory(ushort address, int length)
         {
             /*
              * Extra thanks to http://imrannazar.com/GameBoy-Emulation-in-JavaScript:-Memory
@@ -78,11 +78,11 @@ namespace ShameBoy
                     if(this.isBiosMapped)
                     {
                         if (address < 0x1000)
-                            return this.bios[address];
+                            return new Span<byte>(this.bios, address, length);
                         else if (address == 0x0100) // we've hit the end of the bios. disable bios mapping.
                             this.isBiosMapped = false;
                     }
-                    return this.rom[address];
+                    return new Span<byte>(this.rom, address, length);
 
                 // ROM
                 case 0x1000:
@@ -93,23 +93,23 @@ namespace ShameBoy
                 case 0x5000:
                 case 0x6000:
                 case 0x7000:
-                    return this.rom[address];
+                    return new Span<byte>(this.rom, address, length);
 
                 // VRAM
                 case 0x8000:
                 case 0x9000:
-                    return this.vram[address & 0x1FFF];
+                    return new Span<byte>(this.vram, address & 0x1FFF, length);
 
                 case 0xA000:
                 case 0xB000:
-                    return this.eram[address & 0x1FFF];
+                    return new Span<byte>(this.eram, address & 0x1FFF, length);
 
                 case 0xC000:
                 case 0xD000:
-                    return this.wram[address & 0x1FFF];
+                    return new Span<byte>(this.wram, address & 0x1FFF, length);
 
                 case 0xE000:
-                    return this.wram[address & 0x1FFF];
+                    return new Span<byte>(this.wram, address & 0x1FFF, length);
 
                 case 0xF000:
                     switch (address & 0x0F00)
@@ -117,106 +117,29 @@ namespace ShameBoy
                         // Graphics: object attribute memory.
                         case 0xE00:
                             if (address < 0xFEA0)
-                                return oam[address & 0xFF];
+                                return new Span<byte>(this.oam, address & 0xFF, length);
                             else
-                                return 0;
+                                return new Span<byte>(new byte[length]);
 
                         // zero-page 
                         case 0xF00:
                             if(address >= 0xFF80)
                             {
-                                return zram[address & 0x7F];
+                                return new Span<byte>(this.zram, address & 0x7F, length);
                             }
                             else
                             {
                                 // unimplemented IO
-                                return 0;
+                                return new Span<byte>(new byte[length]);
                             }
 
                         default:
-                            return wram[address & 0x1FFF];
+                            return new Span<byte>(this.wram, address & 0x1FFF, length);
                     }
 
                 default:
                     throw new Exception("address out of bounds!");
             }
-        }
-
-        public ushort ReadShort(ushort address)
-        {
-            return (ushort)(ReadByte(address) + (ReadByte((ushort)(address+1))<<8));
-        }
-
-        public void WriteByte(ushort address, byte value)
-        {
-            switch (address & 0xF000) // mask out lower 3 nibbles
-            {
-                // ROM
-                case 0x0000:
-                case 0x1000:
-                case 0x2000:
-                case 0x3000:
-                // unbanked ROM
-                case 0x4000:
-                case 0x5000:
-                case 0x6000:
-                case 0x7000:
-                    break;
-
-                // VRAM
-                case 0x8000:
-                case 0x9000:
-                    this.vram[address & 0x1FFF] = value;
-                    break;
-
-                case 0xA000:
-                case 0xB000:
-                    this.eram[address & 0x1FFF] = value;
-                    break;
-
-                case 0xC000:
-                case 0xD000:
-                case 0xE000:
-                    this.wram[address & 0x1FFF] = value;
-                    return;
-
-                case 0xF000:
-                    switch (address & 0x0F00)
-                    {
-                        // Graphics: object attribute memory.
-                        case 0xE00:
-                            if (address < 0xFEA0)
-                                oam[address & 0xFF] = value;
-                            break;
-
-                        // zero-page 
-                        case 0xF00:
-                            if (address >= 0xFF80)
-                            {
-                                zram[address & 0x7F] = value;
-                            }
-                            else
-                            {
-                                // unimplemented IO
-                            }
-                            break;
-
-                        default:
-                            wram[address & 0x1FFF] = value;
-                            break;
-                    }
-                    break;
-
-                default:
-                    throw new Exception("address out of bounds!");
-            }
-        }
-
-        public void WriteShort(ushort address, ushort value)
-        {
-            var shrt = BitConverter.GetBytes(value);
-            WriteByte(address, shrt[0]);
-            WriteByte((ushort)(address + 1), shrt[1]);
         }
     }
 }

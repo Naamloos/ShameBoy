@@ -18,7 +18,7 @@ namespace ShameBoy
         /// N
         /// 0 when addition, 1 when subtraction.
         /// </summary>
-        AddSub      = 0b01000000,
+        Subtract      = 0b01000000,
 
         /// <summary>
         /// H
