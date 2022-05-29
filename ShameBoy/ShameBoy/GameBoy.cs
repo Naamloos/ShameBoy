@@ -1,9 +1,11 @@
 ﻿using ShameBoy.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 /*
  * This is the main emulator class for ShameBoy.
@@ -17,6 +19,7 @@ using System.Text;
  * https://cturt.github.io/cinoop.html
  * http://imrannazar.com/GameBoy-Emulation-in-JavaScript:-The-CPU
  * https://rgbds.gbdev.io/docs/v0.5.1/gbz80.7#INC_r8
+ * https://gbdev.gg8.se/files/roms/blargg-gb-tests/ <-- TEST ROMS! :)))
  */
 
 namespace ShameBoy
@@ -27,6 +30,8 @@ namespace ShameBoy
         private MemoryBank memory;
         private ResolvedInstruction[] instructions;
         private byte tStateClock = 0;
+
+        private const int ticksPerTState = 10000000 / 4194304;
 
         public GameBoy()
         {
@@ -59,20 +64,25 @@ namespace ShameBoy
 
         public void Start()
         {
+            var sw = new Stopwatch();
             while(true)
             {
+                sw.Restart();
                 var opcode = memory.FetchMemory(this.registers.ProgramCounter, 1)[0];
 
                 this.registers.ProgramCounter++;
 
                 var instruction = this.instructions[opcode];
-                var length = instruction.Attribute.Length;
+                byte length = (byte)(instruction.Attribute.Length - 1);
 
-                var args = memory.FetchMemory(this.registers.ProgramCounter, length);
+                Span<byte> args = length == 0? default : memory.FetchMemory(this.registers.ProgramCounter, length);
                 this.registers.ProgramCounter += length;
 
                 Console.WriteLine($"${opcode:X2} [{string.Join(",", args.ToArray())}]");
                 instruction.Invoke(ref this.tStateClock, args);
+
+                sw.Stop();
+                Thread.Sleep(TimeSpan.FromTicks((tStateClock * ticksPerTState) - sw.ElapsedTicks));
             }
         }
 
